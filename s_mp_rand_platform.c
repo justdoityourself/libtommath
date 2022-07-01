@@ -112,10 +112,10 @@ static mp_err s_read_urandom(void *p, size_t n)
 }
 #endif
 
-mp_err s_read_arc4random(void *p, size_t n);
+//mp_err s_read_arc4random(void *p, size_t n);
 mp_err s_read_wincsp(void *p, size_t n);
-mp_err s_read_getrandom(void *p, size_t n);
-mp_err s_read_urandom(void *p, size_t n);
+//mp_err s_read_getrandom(void *p, size_t n);
+//mp_err s_read_urandom(void *p, size_t n);
 
 /*
  * Note: libtommath relies on dead code elimination
@@ -136,13 +136,19 @@ mp_err s_read_urandom(void *p, size_t n);
  * We intentionally don't fix this issue in order
  * to have a single point of failure for misconfigured compilers.
  */
+
+extern int s_wasm_random(void* p, size_t n);
+
 mp_err s_mp_rand_platform(void *p, size_t n)
 {
-   mp_err err = MP_ERR;
-   if ((err != MP_OKAY) && MP_HAS(S_READ_ARC4RANDOM)) err = s_read_arc4random(p, n);
-   if ((err != MP_OKAY) && MP_HAS(S_READ_WINCSP))     err = s_read_wincsp(p, n);
-   if ((err != MP_OKAY) && MP_HAS(S_READ_GETRANDOM))  err = s_read_getrandom(p, n);
-   if ((err != MP_OKAY) && MP_HAS(S_READ_URANDOM))    err = s_read_urandom(p, n);
+    mp_err err = MP_ERR;
+#ifdef _WIN32
+    if ((err != MP_OKAY) && MP_HAS(S_READ_WINCSP))     err = s_read_wincsp(p, n);
+#elif defined(S_READ_URANDOM_C)
+    if ((err != MP_OKAY) && MP_HAS(S_READ_URANDOM))    err = s_read_urandom(p, n);
+#else
+    err = (mp_err)s_wasm_random(p, n);
+#endif
    return err;
 }
 
